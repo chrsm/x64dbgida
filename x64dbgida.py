@@ -188,6 +188,38 @@ def do_export():
         json.dump(db, outfile, indent=1)
     print "Done!"
 
+class x64dbg_plugin_action_importdb(idaapi.action_handler_t):
+    def __init__(self):
+        idaapi.action_handler_t.__init__(self)
+    
+    def activate(self, ctx):
+        print "Importing from x64dbg"
+        try:
+            do_import()
+        except:
+            traceback.print_exc()
+            print "Error importing database..."
+        return 1
+
+    def update(self, ctx):
+        return idaapi.AST_ENABLE_ALWAYS
+
+class x64dbg_plugin_action_exportdb(idaapi.action_handler_t):
+    def __init__(self):
+        idaapi.action_handler_t.__init__(self)
+    
+    def activate(self, ctx):
+        print "Exporting to x64dbg format"
+        try:
+            do_export()
+        except:
+            traceback.print_exc()
+            print "Error exporting database..."
+        return 1
+
+    def update(self, ctx):
+        return idaapi.AST_ENABLE_ALWAYS
+
 
 class x64dbg_plugin_t(idaapi.plugin_t):
     comment = "Official x64dbg plugin for IDA Pro"
@@ -203,7 +235,7 @@ class x64dbg_plugin_t(idaapi.plugin_t):
 
         if initialized == False:
             initialized = True
-            menu = idaapi.add_menu_item("Edit/x64dbgida/", "About", "", 0,
+            '''menu = idaapi.add_menu_item("Edit/x64dbgida/", "About", "", 0,
                                         self.about, None)
             if menu is not None:
                 idaapi.add_menu_item("Edit/x64dbgida/", "Export database", "",
@@ -218,6 +250,37 @@ class x64dbg_plugin_t(idaapi.plugin_t):
                 idaapi.add_menu_item("File/Load file/",
                                      "Import x64dbg database", "", 0,
                                      self.importdb, None)
+            '''
+            act_export = idaapi.action_desc_t(
+                'x64dbg:export_db',
+                'Export IDA -> x64dbg',
+                x64dbg_plugin_action_exportdb(),
+                '',
+                'Export IDA -> x64dbg',
+            )
+
+            act_import = idaapi.action_desc_t(
+                'x64dbg:import_db',
+                'Import x64dbg -> IDA',
+                x64dbg_plugin_action_importdb(),
+                '',
+                'Import x64dbg -> IDA',
+            )
+
+            idaapi.register_action(act_export)
+            idaapi.register_action(act_import)
+
+            idaapi.attach_action_to_menu(
+                'Edit/x64dbg/Export DB',
+                'x64dbg:export_db',
+                idaapi.SETMENU_APP,
+            )
+
+            idaapi.attach_action_to_menu(
+                'Edit/x64dbg/Import DB',
+                'x64dbg:import_db',
+                idaapi.SETMENU_APP,
+            )
 
         return idaapi.PLUGIN_OK
 
@@ -226,20 +289,6 @@ class x64dbg_plugin_t(idaapi.plugin_t):
 
     def term(self):
         return
-
-    def importdb(self):
-        try:
-            do_import()
-        except:
-            traceback.print_exc()
-            print "Error importing database..."
-
-    def exportdb(self):
-        try:
-            do_export()
-        except:
-            traceback.print_exc()
-            print "Error exporting database..."
 
     def about(self):
         print self.wanted_name + " " + self.version
